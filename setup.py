@@ -29,7 +29,6 @@ tests_require = [
 
 setup(
     name='django-haystack',
-    use_scm_version=True,
     version='2.6.0-nsoft-andrey',
     description='Pluggable search for Django.',
     author='Daniel Lindsley',
