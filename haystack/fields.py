@@ -2,6 +2,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import re
+import django
 
 from django.template import Context, loader
 from django.utils import datetime_safe, six
@@ -10,6 +11,9 @@ from haystack.exceptions import SearchFieldError
 from haystack.utils import get_model_ct_tuple
 
 from inspect import ismethod
+
+
+IS_DJANGO_VERSION_LESS_1_10 = int(django.get_version().split('.')[0]) == 1 and int(django.get_version().split('.')[1]) < 10
 
 
 class NOT_PROVIDED:
@@ -180,7 +184,11 @@ class SearchField(object):
             template_names = ['search/indexes/%s/%s_%s.txt' % (app_label, model_name, self.instance_name)]
 
         t = loader.select_template(template_names)
-        return t.render({'object': obj})
+
+        if IS_DJANGO_VERSION_LESS_1_10:
+            return t.render(Context({'object': obj}))
+        else:
+            return t.render({'object': obj})
 
     def convert(self, value):
         """
