@@ -68,6 +68,11 @@ class ElasticsearchSearchBackend(BaseSearchBackend):
                         "type": "custom",
                         "tokenizer": "standard",
                         "filter": ["haystack_edgengram", "lowercase"]
+                    },
+                    "haystack_facet": {
+                        "type": "custom",
+                        "tokenizer": "keyword",
+                        "filter": ["lowercase"]
                     }
                 },
                 "tokenizer": {
@@ -423,11 +428,12 @@ class ElasticsearchSearchBackend(BaseSearchBackend):
             filters.append({"terms": {DJANGO_CT: model_choices}})
 
         for q in narrow_queries:
+            key, value = q.split(':')
             filters.append({
                 'fquery': {
                     'query': {
-                        'query_string': {
-                            'query': q
+                        'match': {
+                            key: value
                         },
                     },
                     '_cache': True,
@@ -681,6 +687,14 @@ class ElasticsearchSearchBackend(BaseSearchBackend):
                 if field_class.indexed is False or hasattr(field_class, 'facet_for'):
                     field_mapping['index'] = 'not_analyzed'
                     del field_mapping['analyzer']
+
+            if hasattr(field_class, 'facet_for'):
+                field_mapping['fields'] = {
+                    'facet': {
+                         'type': "string",
+                         'analyzer': "haystack_facet",
+                     }
+                }
 
             mapping[field_class.index_fieldname] = field_mapping
 
