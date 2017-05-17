@@ -172,10 +172,11 @@ class Elasticsearch2SearchBackend(ElasticsearchSearchBackend):
                 }
 
         for q in narrow_queries:
+            key, value = q.split(':')
             filters.append({
-                'query_string': {
-                    'query': q
-                }
+                'match': {
+                    key: value
+                },
             })
 
         # if we want to filter, change the query type to filteres
