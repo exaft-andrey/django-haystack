@@ -511,12 +511,17 @@ class ElasticsearchSearchBackend(BaseSearchBackend):
         search_kwargs = self.build_search_kwargs(query_string, **kwargs)
         search_kwargs['from'] = kwargs.get('start_offset', 0)
 
-        order_fields = set()
-        for order in search_kwargs.get('sort', []):
-            for key in order.keys():
-                order_fields.add(key)
+        # order_fields = set()
+        # for order in search_kwargs.get('sort', []):
+        #     for key in order.keys():
+        #         order_fields.add(key)
+        #
+        # geo_sort = '_geo_distance' in order_fields
 
-        geo_sort = '_geo_distance' in order_fields
+        try:
+            geo_sort = search_kwargs.get('sort', []).index('_geo_distance')
+        except ValueError:
+            geo_sort = -1
 
         end_offset = kwargs.get('end_offset')
         start_offset = kwargs.get('start_offset', 0)
@@ -579,7 +584,7 @@ class ElasticsearchSearchBackend(BaseSearchBackend):
 
     def _process_results(self, raw_results, highlight=False,
                          result_class=None, distance_point=None,
-                         geo_sort=False):
+                         geo_sort=-1):
         from haystack import connections
         results = []
         hits = raw_results.get('hits', {}).get('total', 0)
@@ -649,9 +654,10 @@ class ElasticsearchSearchBackend(BaseSearchBackend):
                 if distance_point:
                     additional_fields['_point_of_origin'] = distance_point
 
-                    if geo_sort and raw_result.get('sort'):
+                    if geo_sort >= 0 and raw_result.get('sort'):
                         from haystack.utils.geo import Distance
-                        additional_fields['_distance'] = Distance(km=float(raw_result['sort'][0]))
+                        # additional_fields['_distance'] = Distance(km=float(raw_result['sort'][0]))
+                        additional_fields['_distance'] = Distance(km=float(raw_result['sort'][geo_sort]))
                     else:
                         additional_fields['_distance'] = None
 
