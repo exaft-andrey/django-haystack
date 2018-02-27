@@ -666,8 +666,8 @@ class Elasticsearch5SearchQuery(ElasticsearchSearchQuery):
     def _clone(self, klass=None, using=None):
         clone = super(Elasticsearch5SearchQuery, self)._clone(klass, using)
         clone.boost_fields = self.boost_fields.copy()
-        clone.boost_negative = self.boost_negative.copy()
-        clone.filter_context = self.filter_context.copy()
+        clone.boost_negative = self.boost_negative
+        clone.filter_context = self.filter_context
         return clone
 
 
