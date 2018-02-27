@@ -87,6 +87,12 @@ class Elasticsearch5SearchBackend(ElasticsearchSearchBackend):
                     field_mapping['fields']['raw'] = {
                         'type': field_mapping['type']}
 
+            if field_mapping['type'] == 'keyword':
+                if 'fielddata' in field_mapping:
+                    del field_mapping['fielddata']
+                if 'analyzer' in field_mapping:
+                    del field_mapping['analyzer']
+
             mapping[field_class.index_fieldname] = field_mapping
 
         return (content_field_name, mapping)
