@@ -379,11 +379,12 @@ class Elasticsearch5SearchBackend(ElasticsearchSearchBackend):
             filters.append({"terms": {DJANGO_CT: model_choices}})
 
         for q in narrow_queries:
-            filters.append(
-                {
-                    'query_string': {'query': q}
-                }
-            )
+            key, value = q.split(':')[0], ':'.join(q.split(':')[1:])
+            filters.append({
+                'match': {
+                    key: value
+                },
+            })
 
         if within is not None:
             from haystack.utils.geo import generate_bounding_box
@@ -428,6 +429,14 @@ class Elasticsearch5SearchBackend(ElasticsearchSearchBackend):
                 }
             }
             filters.append(dwithin_filter)
+
+        for q in narrow_queries:
+            key, value = q.split(':')[0], ':'.join(q.split(':')[1:])
+            filters.append({
+                'match': {
+                    key: value
+                },
+            })
 
         # if we want to filter, change the query type to filteres
         if filters:
