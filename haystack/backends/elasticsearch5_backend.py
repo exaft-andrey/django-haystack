@@ -9,10 +9,11 @@ import elasticsearch
 
 from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
+from django.utils import tree
 
 import haystack
 from haystack.backends.elasticsearch_backend import ElasticsearchSearchBackend, ElasticsearchSearchQuery
-from haystack.backends import SearchNode, BaseEngine, log_query
+from haystack.backends import SearchNode, BaseEngine, log_query, SQ
 from haystack.models import SearchResult
 from haystack.constants import (DEFAULT_OPERATOR, DJANGO_CT, DJANGO_ID, FUZZY_MAX_EXPANSIONS, DEFAULT_ALIAS,
                                 FILTER_SEPARATOR, VALID_FILTERS)
@@ -440,11 +441,39 @@ class Elasticsearch5SearchBackend(ElasticsearchSearchBackend):
         # if we want to filter, change the query type to filteres
         if filters:
             kwargs["query"] = {"bool": {"must": kwargs.pop("query")}}
+            usual_filters = []
+            exclude_filters = []
+
+            for f in filters:
+                for filter_type, params in f.items():
+                    if filter_type == 'query_string':
+                        if 'fields' in params and 'NOT:' in ''.join(params['fields']):
+                            params['fields'] = '||'.join(params['fields']).replace('NOT:', '').split('||')
+                            exclude_filters.append(f)
+                        else:
+                            usual_filters.append(f)
+                    else:
+                        for field, val in params.items():
+                            if 'NOT:' in field:
+                                del params[field]
+                                params[field.replace('NOT:', '')] = val
+                                exclude_filters.append(f)
+                            else:
+                                usual_filters.append(f)
 
             if len(filters) == 1:
-                kwargs['query']['bool']["filter"] = filters[0]
+                if usual_filters:
+                    kwargs['query']['bool']["filter"] = usual_filters[0]
+                else:
+                    kwargs['query']['bool']["filter"] = {"bool": {"must_not": exclude_filters}}
             else:
-                kwargs['query']['bool']["filter"] = {"bool": {"must": filters}}
+                if usual_filters:
+                    kwargs['query']['bool']["filter"] = {"bool": {"must": usual_filters}}
+                if exclude_filters:
+                    if 'bool' in kwargs['query']['bool']["filter"]:
+                        kwargs['query']['bool']['filter']['bool']['must_not'] = exclude_filters
+                    else:
+                        kwargs['query']['bool']["filter"] = {"bool": {"must_not": exclude_filters}}
 
         if extra_kwargs:
             kwargs.update(extra_kwargs)
@@ -674,9 +703,43 @@ class Elasticsearch5SearchQuery(ElasticsearchSearchQuery):
     def _clone(self, klass=None, using=None):
         clone = super(Elasticsearch5SearchQuery, self)._clone(klass, using)
         clone.boost_fields = self.boost_fields.copy()
-        clone.boost_negative = self.boost_negative
-        clone.filter_context = self.filter_context
+        clone.boost_negative = self.boost_negative[:]
+        clone.filter_context = self.filter_context[:]
         return clone
+
+    def add_filter(self, query_filter, use_or=False):
+        """
+        Adds a SQ to the current query.
+        """
+        if use_or:
+            connector = SQ.OR
+        else:
+            connector = SQ.AND
+
+        if self.query_filter and query_filter.connector != connector and len(query_filter) > 1:
+            self.query_filter.start_subtree(connector)
+            subtree = True
+        else:
+            subtree = False
+
+        for child in query_filter.children:
+            if isinstance(child, tree.Node):
+                self.query_filter.start_subtree(connector)
+                self.add_filter(child)
+                self.query_filter.end_subtree()
+            else:
+                expression, value = child
+                if query_filter.negated:
+                    expression = 'NOT:{}'.format(expression)
+                self.query_filter.add((expression, value), connector)
+
+            connector = query_filter.connector
+
+        if query_filter.negated:
+            self.query_filter.negate()
+
+        if subtree:
+            self.query_filter.end_subtree()
 
 
 class Elasticsearch5SearchEngine(BaseEngine):
