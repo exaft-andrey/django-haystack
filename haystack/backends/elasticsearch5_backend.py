@@ -9,11 +9,10 @@ import elasticsearch
 
 from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
-from django.utils import tree
 
 import haystack
 from haystack.backends.elasticsearch_backend import ElasticsearchSearchBackend, ElasticsearchSearchQuery
-from haystack.backends import SearchNode, BaseEngine, log_query, SQ
+from haystack.backends import SearchNode, BaseEngine, log_query
 from haystack.models import SearchResult
 from haystack.constants import (DEFAULT_OPERATOR, DJANGO_CT, DJANGO_ID, FUZZY_MAX_EXPANSIONS, DEFAULT_ALIAS,
                                 FILTER_SEPARATOR, VALID_FILTERS)
@@ -124,85 +123,85 @@ class Elasticsearch5SearchBackend(ElasticsearchSearchBackend):
             'fuzzy': u'%s~',
         }
 
-        if filter_context:
-            for f in filter_context:
-                if f.get('content'):
-                    content = str(f.pop('content'))
-                    if query_string == '*:*':
-                        query_string = content
-                    else:
-                        query_string = '%s %s' % (query_string, content)
-                for k, v in f.items():
-                    _filter = None
-                    _filter_with_score = None
-                    try:
-                        _value = v.prepare()
-                    except AttributeError:
-                        _value = str(v)
-                    _field, _lookup = self.get_filter_lookup(k)
-                    _is_nested = NESTED_FILTER_SEPARATOR in _field
-                    _nested_path = None
-                    if _is_nested:
-                        _nested_path = _field.split(NESTED_FILTER_SEPARATOR)[0]
-                        _field = ('.').join(_field.split(NESTED_FILTER_SEPARATOR))
-                    if _lookup == 'exact':
-                        if _is_nested:
-                            _filter = {'term': {_field: _value}}
-                        else:
-                            _filter = {'term': {_field + '.raw': _value}}
-                    elif _lookup == 'content':
-                        _filter_with_score = {'match': {_field: _value}}
-                    elif _lookup == 'in':
-                        if not isinstance(_value, list):
-                            _value = ast.literal_eval(str(_value))
-                        _filter = {
-                            'query_string': {
-                                'fields': [_field],
-                                'query': ' OR '.join(['"%s"' % i for i in _value])
-                            }}
-                    elif _lookup == 'range':
-                        if isinstance(_value, dict):
-                            _filter = {'range': {_field: _value}}
-                        elif _value:
-                            if not isinstance(_value, list):
-                                _value = _value.split(',')
-                            if len(_value) >= 2:
-                                _range = {}
-                                _range['gte'] = _value[0]
-                                _range['lte'] = _value[1]
-                                _filter = {'range': {_field: _range}}
-                            else:
-                                raise ValueError(
-                                    _('Range lookup requires minimum and maximum values,'
-                                      'only one value was provided'))
-                    else:
-                        _filter = {
-                            'query_string': {
-                                'fields': [_field],
-                                'query': filter_query_strings[_lookup] % _value,
-                            }}
-
-                    # nested filter
-                    if _is_nested:
-                        if _filter:
-                            _filter = {
-                                'nested': {
-                                    'path': _nested_path,
-                                    'query': _filter
-                                }
-                            }
-                        if _filter_with_score:
-                            _filter_with_score = {
-                                'nested': {
-                                    'path': _nested_path,
-                                    'query': _filter_with_score
-                                }
-                            }
-
-                    if _filter:
-                        filters.append(_filter)
-                    if _filter_with_score:
-                        filters.append(_filter_with_score)
+        # if filter_context:
+        #     for f in filter_context:
+        #         if f.get('content'):
+        #             content = str(f.pop('content'))
+        #             if query_string == '*:*':
+        #                 query_string = content
+        #             else:
+        #                 query_string = '%s %s' % (query_string, content)
+        #         for k, v in f.items():
+        #             _filter = None
+        #             _filter_with_score = None
+        #             try:
+        #                 _value = v.prepare()
+        #             except AttributeError:
+        #                 _value = str(v)
+        #             _field, _lookup = self.get_filter_lookup(k)
+        #             _is_nested = NESTED_FILTER_SEPARATOR in _field
+        #             _nested_path = None
+        #             if _is_nested:
+        #                 _nested_path = _field.split(NESTED_FILTER_SEPARATOR)[0]
+        #                 _field = ('.').join(_field.split(NESTED_FILTER_SEPARATOR))
+        #             if _lookup == 'exact':
+        #                 if _is_nested:
+        #                     _filter = {'term': {_field: _value}}
+        #                 else:
+        #                     _filter = {'term': {_field + '.raw': _value}}
+        #             elif _lookup == 'content':
+        #                 _filter_with_score = {'match': {_field: _value}}
+        #             elif _lookup == 'in':
+        #                 if not isinstance(_value, list):
+        #                     _value = ast.literal_eval(str(_value))
+        #                 _filter = {
+        #                     'query_string': {
+        #                         'fields': [_field],
+        #                         'query': ' OR '.join(['"%s"' % i for i in _value])
+        #                     }}
+        #             elif _lookup == 'range':
+        #                 if isinstance(_value, dict):
+        #                     _filter = {'range': {_field: _value}}
+        #                 elif _value:
+        #                     if not isinstance(_value, list):
+        #                         _value = _value.split(',')
+        #                     if len(_value) >= 2:
+        #                         _range = {}
+        #                         _range['gte'] = _value[0]
+        #                         _range['lte'] = _value[1]
+        #                         _filter = {'range': {_field: _range}}
+        #                     else:
+        #                         raise ValueError(
+        #                             _('Range lookup requires minimum and maximum values,'
+        #                               'only one value was provided'))
+        #             else:
+        #                 _filter = {
+        #                     'query_string': {
+        #                         'fields': [_field],
+        #                         'query': filter_query_strings[_lookup] % _value,
+        #                     }}
+        #
+        #             # nested filter
+        #             if _is_nested:
+        #                 if _filter:
+        #                     _filter = {
+        #                         'nested': {
+        #                             'path': _nested_path,
+        #                             'query': _filter
+        #                         }
+        #                     }
+        #                 if _filter_with_score:
+        #                     _filter_with_score = {
+        #                         'nested': {
+        #                             'path': _nested_path,
+        #                             'query': _filter_with_score
+        #                         }
+        #                     }
+        #
+        #             if _filter:
+        #                 filters.append(_filter)
+        #             if _filter_with_score:
+        #                 filters.append(_filter_with_score)
 
         if query_string == '*:*':
             kwargs = {
@@ -441,39 +440,11 @@ class Elasticsearch5SearchBackend(ElasticsearchSearchBackend):
         # if we want to filter, change the query type to filteres
         if filters:
             kwargs["query"] = {"bool": {"must": kwargs.pop("query")}}
-            usual_filters = []
-            exclude_filters = []
-
-            for f in filters:
-                for filter_type, params in f.items():
-                    if filter_type == 'query_string':
-                        if 'fields' in params and 'NOT:' in ''.join(params['fields']):
-                            params['fields'] = '||'.join(params['fields']).replace('NOT:', '').split('||')
-                            exclude_filters.append(f)
-                        else:
-                            usual_filters.append(f)
-                    else:
-                        for field, val in params.items():
-                            if 'NOT:' in field:
-                                del params[field]
-                                params[field.replace('NOT:', '')] = val
-                                exclude_filters.append(f)
-                            else:
-                                usual_filters.append(f)
 
             if len(filters) == 1:
-                if usual_filters:
-                    kwargs['query']['bool']["filter"] = usual_filters[0]
-                else:
-                    kwargs['query']['bool']["filter"] = {"bool": {"must_not": exclude_filters}}
+                kwargs['query']['bool']["filter"] = filters[0]
             else:
-                if usual_filters:
-                    kwargs['query']['bool']["filter"] = {"bool": {"must": usual_filters}}
-                if exclude_filters:
-                    if 'bool' in kwargs['query']['bool']["filter"]:
-                        kwargs['query']['bool']['filter']['bool']['must_not'] = exclude_filters
-                    else:
-                        kwargs['query']['bool']["filter"] = {"bool": {"must_not": exclude_filters}}
+                kwargs['query']['bool']["filter"] = {"bool": {"must": filters}}
 
         if extra_kwargs:
             kwargs.update(extra_kwargs)
@@ -659,7 +630,11 @@ class Elasticsearch5SearchQuery(ElasticsearchSearchQuery):
     def build_query(self):
         """Adds parameters to the filter context.
         """
-        final_query = self.matching_all_fragment()
+        final_query = self.query_filter.as_query_string(self.build_query_fragment)
+
+        if not final_query:
+            # Match all.
+            final_query = self.matching_all_fragment()
 
         if self.boost:
             boost_list = []
@@ -706,40 +681,6 @@ class Elasticsearch5SearchQuery(ElasticsearchSearchQuery):
         clone.boost_negative = self.boost_negative[:]
         clone.filter_context = self.filter_context[:]
         return clone
-
-    def add_filter(self, query_filter, use_or=False):
-        """
-        Adds a SQ to the current query.
-        """
-        if use_or:
-            connector = SQ.OR
-        else:
-            connector = SQ.AND
-
-        if self.query_filter and query_filter.connector != connector and len(query_filter) > 1:
-            self.query_filter.start_subtree(connector)
-            subtree = True
-        else:
-            subtree = False
-
-        for child in query_filter.children:
-            if isinstance(child, tree.Node):
-                self.query_filter.start_subtree(connector)
-                self.add_filter(child)
-                self.query_filter.end_subtree()
-            else:
-                expression, value = child
-                if query_filter.negated:
-                    expression = 'NOT:{}'.format(expression)
-                self.query_filter.add((expression, value), connector)
-
-            connector = query_filter.connector
-
-        if query_filter.negated:
-            self.query_filter.negate()
-
-        if subtree:
-            self.query_filter.end_subtree()
 
 
 class Elasticsearch5SearchEngine(BaseEngine):
