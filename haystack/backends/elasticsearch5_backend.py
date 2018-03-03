@@ -81,7 +81,7 @@ class Elasticsearch5SearchBackend(ElasticsearchSearchBackend):
                 # add raw field
                 if not field_mapping.get('fields'):
                     field_mapping['fields'] = {}
-                if field_mapping['type'] == 'text':
+                if field_mapping['type'] == 'text' and getattr(field_class, 'use_template', False):
                     field_mapping['fields']['raw'] = {'type': 'keyword'}
                 else:
                     field_mapping['fields']['raw'] = {
