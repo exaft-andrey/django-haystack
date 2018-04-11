@@ -11,6 +11,7 @@ from haystack.manager import SearchIndexManager
 from haystack.indexes import *  # noqa: F403
 
 from .fields import *  # noqa: F403
+from .fields_es5 import TextField, KeywordField
 
 
 class Elasticsears5DeclarativeMetaclass(DeclarativeMetaclass):  # noqa: F405

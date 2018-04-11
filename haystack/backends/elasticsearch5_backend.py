@@ -39,6 +39,8 @@ DATE_RANGE_FIELD_NAME_SUFFIX = '_haystack_date_range'
 
 DEFAULT_FIELD_MAPPING = {'type': 'text', 'analyzer': 'snowball'}
 FIELD_MAPPINGS = {
+    'text': {'type': 'text', 'analyzer': 'snowball'},
+    'keyword': {'type': 'keyword'},
     'edge_ngram': {'type': 'text', 'analyzer': 'edgengram_analyzer'},
     'ngram': {'type': 'text', 'analyzer': 'ngram_analyzer'},
     'date': {'type': 'date'},
@@ -61,8 +63,8 @@ class Elasticsearch5SearchBackend(ElasticsearchSearchBackend):
     def build_schema(self, fields):
         content_field_name = ''
         mapping = {
-            DJANGO_CT: {'type': 'keyword', 'index': 'not_analyzed', 'include_in_all': False},
-            DJANGO_ID: {'type': 'keyword', 'index': 'not_analyzed', 'include_in_all': False},
+            DJANGO_CT: {'type': 'keyword', 'index': True, 'include_in_all': False},
+            DJANGO_ID: {'type': 'keyword', 'index': True, 'include_in_all': False},
         }
 
         for field_name, field_class in fields.items():
@@ -71,11 +73,11 @@ class Elasticsearch5SearchBackend(ElasticsearchSearchBackend):
             if field_class.document is True:
                 content_field_name = field_class.index_fieldname
 
-            if field_mapping['type'] == 'text':
-                if field_class.indexed is False or hasattr(field_class, 'facet_for'):
-                    # do not analyze
-                    field_mapping['index'] = 'not_analyzed'
+            if field_mapping['type'] == 'text' and hasattr(field_class, 'facet_for'):
                     field_mapping['type'] = 'keyword'
+
+            if field_class.indexed is False:
+                field_mapping['index'] = False
 
             if field_mapping['type'] not in ['object', 'nested', 'geo_point', 'geo_shape']:
                 # add raw field

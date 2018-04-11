@@ -67,3 +67,11 @@ class NgramField(CharField):
 
 class EdgeNgramField(NgramField):
     field_type = 'edge_ngram'
+
+
+class TextField(CharField):
+    field_type = 'text'
+
+
+class KeywordField(CharField):
+    field_type = 'keyword'
