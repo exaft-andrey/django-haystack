@@ -37,7 +37,7 @@ __all__ = ['Elasticsearch5SearchBackend', 'Elasticsearch5SearchEngine']
 DATE_HISTOGRAM_FIELD_NAME_SUFFIX = '_haystack_date_histogram'
 DATE_RANGE_FIELD_NAME_SUFFIX = '_haystack_date_range'
 
-DEFAULT_FIELD_MAPPING = {'type': 'text', 'analyzer': 'snowball', 'fielddata': True}
+DEFAULT_FIELD_MAPPING = {'type': 'text', 'analyzer': 'snowball'}
 FIELD_MAPPINGS = {
     'edge_ngram': {'type': 'text', 'analyzer': 'edgengram_analyzer'},
     'ngram': {'type': 'text', 'analyzer': 'ngram_analyzer'},
@@ -61,8 +61,8 @@ class Elasticsearch5SearchBackend(ElasticsearchSearchBackend):
     def build_schema(self, fields):
         content_field_name = ''
         mapping = {
-            DJANGO_CT: {'type': 'text', 'index': 'not_analyzed', 'include_in_all': False},
-            DJANGO_ID: {'type': 'text', 'index': 'not_analyzed', 'include_in_all': False},
+            DJANGO_CT: {'type': 'keyword', 'index': 'not_analyzed', 'include_in_all': False},
+            DJANGO_ID: {'type': 'keyword', 'index': 'not_analyzed', 'include_in_all': False},
         }
 
         for field_name, field_class in fields.items():
