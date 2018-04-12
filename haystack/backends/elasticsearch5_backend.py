@@ -37,9 +37,9 @@ __all__ = ['Elasticsearch5SearchBackend', 'Elasticsearch5SearchEngine']
 DATE_HISTOGRAM_FIELD_NAME_SUFFIX = '_haystack_date_histogram'
 DATE_RANGE_FIELD_NAME_SUFFIX = '_haystack_date_range'
 
-DEFAULT_FIELD_MAPPING = {'type': 'text', 'analyzer': 'snowball'}
+DEFAULT_FIELD_MAPPING = {'type': 'text'}
 FIELD_MAPPINGS = {
-    'text': {'type': 'text', 'analyzer': 'snowball'},
+    'text': {'type': 'text'},
     'keyword': {'type': 'keyword'},
     'edge_ngram': {'type': 'text', 'analyzer': 'edgengram_analyzer'},
     'ngram': {'type': 'text', 'analyzer': 'ngram_analyzer'},
