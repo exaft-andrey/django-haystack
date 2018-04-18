@@ -2,7 +2,7 @@
 # Based on https://github.com/tehamalab/django-haystack-es
 
 import json
-from haystack.fields import SearchField, CharField
+from haystack.fields import SearchField, CharField, MultiValueField, DecimalField
 
 
 class DictField(SearchField):
@@ -74,4 +74,12 @@ class TextField(CharField):
 
 
 class KeywordField(CharField):
+    field_type = 'keyword'
+
+
+class MultiValueES5Field(MultiValueField):
+    field_type = 'keyword'
+
+
+class DecimalES5Field(DecimalField):
     field_type = 'keyword'

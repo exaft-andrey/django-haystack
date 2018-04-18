@@ -440,7 +440,7 @@ class Elasticsearch5SearchBackend(ElasticsearchSearchBackend):
                 }
             )
 
-        # if we want to filter, change the query type to filteres
+        # if we want to filter, change the query type to filtered
         if filters:
             kwargs["query"] = {"bool": {"must": kwargs.pop("query")}}
 
