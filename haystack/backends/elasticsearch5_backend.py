@@ -60,6 +60,10 @@ NESTED_FILTER_SEPARATOR = '>'
 
 class Elasticsearch5SearchBackend(ElasticsearchSearchBackend):
 
+    def __init__(self, connection_alias, **connection_options):
+        super(Elasticsearch5SearchBackend, self).__init__(connection_alias, **connection_options)
+        self.DEFAULT_SETTINGS['settings']['number_of_shards'] = getattr(settings, 'HAYSTACK_ES_SHARDS_NUM', '1')
+
     def build_schema(self, fields):
         content_field_name = ''
         mapping = {
