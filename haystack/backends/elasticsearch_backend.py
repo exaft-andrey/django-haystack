@@ -968,7 +968,12 @@ class ElasticsearchSearchQuery(BaseSearchQuery):
         if kwargs:
             search_kwargs.update(kwargs)
 
-        results = self.backend.search(final_query, **search_kwargs)
+        try:
+            results = self.backend.search(final_query, **search_kwargs)
+        except elasticsearch.SerializationError as e:
+            # try again
+            results = self.backend.search(final_query, **search_kwargs)
+
         self._results = results.get('results', [])
         self._hit_count = results.get('hits', 0)
         self._facet_counts = self.post_process_facets(results)
